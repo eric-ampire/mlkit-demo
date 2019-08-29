@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "226529306766",
+    "firebase_url": "https://mlkit-demo-2306c.firebaseio.com",
+    "project_id": "mlkit-demo-2306c",
+    "storage_bucket": "mlkit-demo-2306c.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:226529306766:android:b24ab5c8bdc4a723",
+        "android_client_info": {
+          "package_name": "com.ericampire.mobile.mlkit"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "226529306766-f2vuerum3pblmp6u3vrcrfgs60ta0bhu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ericampire.mobile.mlkit",
+            "certificate_hash": "b879650fdfadfb48bfbd31e9e3738f508373f54c"
+          }
+        },
+        {
+          "client_id": "226529306766-gunir1sesii486rkr2dk2jfuu1enopnt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC30tLcJbhiZDHigseqdCjkbloeTy7Vwo0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "226529306766-gunir1sesii486rkr2dk2jfuu1enopnt.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
