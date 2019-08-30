@@ -100,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
 
             if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
                 String[] permission = {Manifest.permission.CAMERA};
-                requestPermissions(permission, 1);
+                requestPermissions(permission, REQUEST_CAMERA_PERMISSION);
             } else {
                 startCamera();
             }
