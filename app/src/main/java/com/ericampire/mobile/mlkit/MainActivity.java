@@ -12,8 +12,10 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.Image;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -35,6 +37,8 @@ import java.io.IOException;
 public class MainActivity extends AppCompatActivity {
 
     private static final int REQUEST_CODE_CAPTURE = 2;
+    private static final int REQUEST_CAMERA_PERMISSION = 4;
+    private static final String TAG = "MainActivity";
     private ImageView previewImage;
     private ProgressBar progressBar;
     private LinearLayout buttonLayout;
@@ -51,6 +55,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void processDetection(View view) {
+
+        Log.i(TAG, "processDetection");
         if (imageBitmap == null) return;
 
         FirebaseVisionImage firebaseVisionImage = FirebaseVisionImage.fromBitmap(imageBitmap);
@@ -90,10 +96,35 @@ public class MainActivity extends AppCompatActivity {
 
     public void pickImage(View view) {
 
-        Intent imageIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 
+            if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                String[] permission = {Manifest.permission.CAMERA};
+                requestPermissions(permission, 1);
+            } else {
+                startCamera();
+            }
+
+        } else {
+            startCamera();
+        }
+    }
+
+    private void startCamera() {
+        Intent imageIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         if (imageIntent.resolveActivity(getPackageManager()) != null) {
             startActivityForResult(imageIntent, REQUEST_CODE_CAPTURE);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_CAMERA_PERMISSION) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.i(TAG, String.valueOf(grantResults[0]));
+                startCamera();
+            }
         }
     }
 
@@ -106,6 +137,7 @@ public class MainActivity extends AppCompatActivity {
                 Uri imageUri = data.getData();
                 if (imageUri != null) {
 
+                    Log.i(TAG, "onActivityResult");
                     imageBitmap = getBitmapFromUri(getPathFromURI(imageUri));
                     previewImage.setImageURI(imageUri);
                 }
@@ -115,6 +147,7 @@ public class MainActivity extends AppCompatActivity {
 
     private Bitmap getBitmapFromUri(String imageUri) {
         try {
+            Log.i(TAG, "getBitmapFromUri");
             return decodeSampledBitmapFromFile(imageUri, 200, 200);
         } catch (Exception e) {
             return null;
@@ -129,6 +162,8 @@ public class MainActivity extends AppCompatActivity {
 
         try
         {
+            Log.i(TAG, "getPathFromURI");
+
             int column_index = cursor.getColumnIndex(MediaStore.Images.Media.DATA);
             cursor.moveToFirst();
             return cursor.getString(column_index);
