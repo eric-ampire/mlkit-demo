@@ -31,13 +31,18 @@ import com.google.firebase.ml.vision.FirebaseVision;
 import com.google.firebase.ml.vision.common.FirebaseVisionImage;
 import com.google.firebase.ml.vision.text.FirebaseVisionText;
 import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
+import com.karumi.dexter.Dexter;
+import com.karumi.dexter.PermissionToken;
+import com.karumi.dexter.listener.PermissionDeniedResponse;
+import com.karumi.dexter.listener.PermissionGrantedResponse;
+import com.karumi.dexter.listener.PermissionRequest;
+import com.karumi.dexter.listener.single.PermissionListener;
 
 import java.io.IOException;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements PermissionListener {
 
     private static final int REQUEST_CODE_CAPTURE = 2;
-    private static final int REQUEST_CAMERA_PERMISSION = 4;
     private static final String TAG = "MainActivity";
     private ImageView previewImage;
     private ProgressBar progressBar;
@@ -54,14 +59,14 @@ public class MainActivity extends AppCompatActivity {
         buttonLayout = findViewById(R.id.lyButton);
     }
 
-    public void processDetection(View view) {
+    public void processDetection() {
 
         Log.i(TAG, "processDetection");
         if (imageBitmap == null) return;
 
         FirebaseVisionImage firebaseVisionImage = FirebaseVisionImage.fromBitmap(imageBitmap);
         FirebaseVisionTextRecognizer detector = FirebaseVision.getInstance()
-            .getOnDeviceTextRecognizer();
+                .getOnDeviceTextRecognizer();
 
         // Start Progression
         progressBar.setVisibility(View.VISIBLE);
@@ -95,19 +100,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void pickImage(View view) {
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-
-            if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                String[] permission = {Manifest.permission.CAMERA};
-                requestPermissions(permission, REQUEST_CAMERA_PERMISSION);
-            } else {
-                startCamera();
-            }
-
-        } else {
-            startCamera();
-        }
+        Dexter.withActivity(this)
+                .withPermission(Manifest.permission.CAMERA)
+                .withListener(this)
+                .check();
     }
 
     private void startCamera() {
@@ -118,105 +114,28 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_CAMERA_PERMISSION) {
-            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Log.i(TAG, String.valueOf(grantResults[0]));
-                startCamera();
-            }
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == REQUEST_CODE_CAPTURE && resultCode == RESULT_OK && data != null) {
+            imageBitmap = (Bitmap) data.getExtras().get("data");
+            previewImage.setImageBitmap(imageBitmap);
+            processDetection();
         }
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (resultCode == RESULT_OK) {
-            if (requestCode == REQUEST_CODE_CAPTURE && data != null) {
-                Uri imageUri = data.getData();
-                if (imageUri != null) {
-
-                    Log.i(TAG, "onActivityResult");
-                    imageBitmap = getBitmapFromUri(getPathFromURI(imageUri));
-                    previewImage.setImageURI(imageUri);
-                }
-            }
-        }
+    public void onPermissionGranted(PermissionGrantedResponse response) {
+        startCamera();
     }
 
-    private Bitmap getBitmapFromUri(String imageUri) {
-        try {
-            Log.i(TAG, "getBitmapFromUri");
-            return decodeSampledBitmapFromFile(imageUri, 200, 200);
-        } catch (Exception e) {
-            return null;
-        }
+    @Override
+    public void onPermissionDenied(PermissionDeniedResponse response) {
+        Toast.makeText(this, "L'application n'a eu le droit d'utiliser la camera", Toast.LENGTH_LONG).show();
     }
 
-    public String getPathFromURI(Uri contentUri)
-    {
-        String[] proj = {MediaStore.Images.Media.DATA};
-        Cursor cursor = this.getContentResolver().query(contentUri, proj, null, null, null);
-        if (cursor == null) return "emp";
+    @Override
+    public void onPermissionRationaleShouldBeShown(PermissionRequest permission, PermissionToken token) {
 
-        try
-        {
-            Log.i(TAG, "getPathFromURI");
-
-            int column_index = cursor.getColumnIndex(MediaStore.Images.Media.DATA);
-            cursor.moveToFirst();
-            return cursor.getString(column_index);
-        }
-        catch (Exception e)
-        {
-            return contentUri.getPath();
-        }
-        finally {
-            cursor.close();
-        }
     }
-
-
-    public static Bitmap decodeSampledBitmapFromFile(String imagePath,
-                                                     int reqWidth, int reqHeight) {
-
-        // First decode with inJustDecodeBounds=true to check dimensions
-        final BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true;
-        BitmapFactory.decodeFile(imagePath, options);
-
-        // Calculate inSampleSize
-        options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
-
-        // Decode bitmap with inSampleSize set
-        options.inJustDecodeBounds = false;
-        //return Bitmap.createScaledBitmap(bt, reqWidth, reqHeight, false);
-        return BitmapFactory.decodeFile(imagePath, options);
-    }
-
-
-    public static int calculateInSampleSize(
-            BitmapFactory.Options options, int reqWidth, int reqHeight) {
-        // Raw height and width of image
-        final int height = options.outHeight;
-        final int width = options.outWidth;
-        int inSampleSize = 1;
-
-        if (height > reqHeight || width > reqWidth) {
-
-            final int halfHeight = height / 2;
-            final int halfWidth = width / 2;
-
-            // Calculate the largest inSampleSize value that is a power of 2 and keeps both
-            // height and width larger than the requested height and width.
-            while ((halfHeight / inSampleSize) > reqHeight
-                    && (halfWidth / inSampleSize) > reqWidth) {
-                inSampleSize *= 2;
-            }
-        }
-
-        return inSampleSize;
-    }
-
 }
